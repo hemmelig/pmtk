@@ -1,0 +1,29 @@
+[project]
+name = "pmtk"
+version = "0.1.0"
+description = "Project Management Toolkit for research."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+    { name = "Conor Bacon", email = "conor.bacon@norsar.no" }
+]
+
+dependencies = [
+    "typer>=0.12",
+    "rich>=13",
+    "ruff",
+]
+
+[project.scripts]
+pmtk = "pmtk.cli:entrypoint"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.setuptools.packages.find]
+include = ["pmtk*"]
+
+[tool.ruff]
+line-length = 88
