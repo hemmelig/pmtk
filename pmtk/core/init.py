@@ -15,20 +15,22 @@ import subprocess
 
 import typer
 
+from pmtk.templates import get_template
+
 
 PROJECT_DIRS = [
     "archive",
     "config",
     "data",
     "docs",
-    "environment",
+    "environments",
     "logs",
     "maps",
     "notes",
     "reports",
     "results",
     "tools",
-    "workspace"
+    "workspace",
 ]
 
 CONFIG_FILES = {
@@ -37,8 +39,9 @@ CONFIG_FILES = {
     "environment.yaml": "",
     "contacts.yaml": "",
     "tasks.yaml": "",
-    "registry.yaml": ""
+    "registry.yaml": "",
 }
+
 
 def init_project(name: str, force: bool = False, git: bool = False) -> None:
     """
@@ -56,6 +59,8 @@ def init_project(name: str, force: bool = False, git: bool = False) -> None:
 
     """
 
+    typer.echo(f"Initialising '{name}' project...")
+
     project_path = pathlib.Path(name)
 
     if project_path.exists() and not force:
@@ -64,18 +69,21 @@ def init_project(name: str, force: bool = False, git: bool = False) -> None:
         )
         raise typer.Exit(code=1)
 
-    # Create main directory tree
+    typer.echo("  ...creating main directory tree...", nl=False)
     project_path.mkdir(parents=True, exist_ok=True)
     for subdir in PROJECT_DIRS:
         (project_path / subdir).mkdir(parents=True, exist_ok=True)
+    typer.echo(typer.style("success!", fg=typer.colors.GREEN, bold=True))
 
-    # Initialise configuration files
+    typer.echo("  ...initialising config files...", nl=False)
     config_dir = project_path / "config"
     now = dt.now(UTC).isoformat()
     for filename, template in CONFIG_FILES.items():
         content = template.format(name, now) if "{}" in template else template
         (config_dir / filename).write_text(content)
+    typer.echo(typer.style("success!", fg=typer.colors.GREEN, bold=True))
 
+    typer.echo("  ...creating PMTK project files...", nl=False)
     readme = project_path / "README.md"
     readme.write_text(f"# {name}\n\nProject initialised by pmtk on {now}\n")
 
@@ -85,7 +93,37 @@ def init_project(name: str, force: bool = False, git: bool = False) -> None:
     pmignore = project_path / ".pmignore"
     pmignore.write_text("# Add internal or private files here\n")
 
-    if git:
-        subprocess.run(["git", "init", str(project_path)])
+    pre_commit = project_path / ".pre-commit-config.yaml"
+    pre_commit.write_text(get_template("pre-commit-config.yaml"))
+    typer.echo(typer.style("success!", fg=typer.colors.GREEN, bold=True))
 
-    typer.echo(f"Project '{name}' created successfully.")
+    if git:
+        typer.echo("  ...initialising git repository...", nl=False)
+        result = subprocess.run(
+            ["git", "init", str(project_path)],
+            capture_output=True,
+            text=True,
+        )
+
+        if result.returncode != 0:
+            typer.echo(
+                f"Warning: Failed to initialise git repository: {result.stderr}",
+                err=True,
+            )
+        else:
+            pre_commit_result = subprocess.run(
+                ["pre-commit", "install"],
+                cwd=str(project_path),
+                capture_output=True,
+                text=True,
+            )
+
+            if pre_commit_result.returncode == 0:
+                typer.echo("repository initialised with pre-commit hooks.")
+            else:
+                typer.echo("repository initialised without pre-commit hooks.")
+
+    typer.echo(
+        f"Project '{name}' creation "
+        + typer.style("successful.", fg=typer.colors.GREEN, bold=True)
+    )
