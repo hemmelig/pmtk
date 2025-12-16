@@ -12,7 +12,7 @@ General utilities for the pmtk package.
 import pathlib
 
 
-def find_project_root(start_path: pathlib.Path = None) -> pathlib.Path | None:
+def find_project_root(start_path: pathlib.Path | None = None) -> pathlib.Path | None:
     """
     Find the project root by looking for .pmtk-lock file.
 
@@ -30,13 +30,9 @@ def find_project_root(start_path: pathlib.Path = None) -> pathlib.Path | None:
 
     """
 
-    if start_path is None:
-        start_path = pathlib.Path.cwd()
-
-    current = start_path.resolve()
-    for parent in [current] + list(current.parents):
-        lock_file = parent / ".pmtk-lock"
-        if lock_file.exists():
+    path = (start_path or pathlib.Path.cwd()).resolve()
+    for parent in [path, *path.parents]:
+        if (parent / ".pmtk-lock").exists():
             return parent
 
     return None

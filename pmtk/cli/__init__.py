@@ -12,6 +12,7 @@ Top-level CLI for pmtk.
 import typer
 
 from pmtk.core.init import init_project
+from pmtk.core.status import status as status_cmd
 from .work_units import app as work_unit_app
 
 
@@ -41,6 +42,16 @@ def init(
     """
 
     init_project(project_name, force=force, git=git)
+
+
+@app.command("status")
+def status():
+    """
+    Show project status and basic health checks.
+
+    """
+
+    status_cmd()
 
 
 def entrypoint():
