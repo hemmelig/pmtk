@@ -14,24 +14,11 @@ import pathlib
 import subprocess
 
 import typer
+import yaml
 
 from pmtk.templates import get_template
+from pmtk.utils import PROJECT_STRUCTURE
 
-
-PROJECT_DIRS = [
-    "archive",
-    "config",
-    "data",
-    "docs",
-    "environments",
-    "logs",
-    "maps",
-    "notes",
-    "reports",
-    "results",
-    "tools",
-    "workspace",
-]
 
 CONFIG_FILES = {
     "project.yaml": "project_name: {}\ncreated: {}\n",
@@ -43,7 +30,17 @@ CONFIG_FILES = {
 }
 
 
-def init_project(name: str, force: bool = False, git: bool = False) -> None:
+def create_tree(base: pathlib.Path, tree: dict) -> None:
+    for name, subtree in tree.items():
+        path = base / name
+        path.mkdir(parents=True, exist_ok=True)
+        if subtree:
+            create_tree(path, subtree)
+
+
+def init_project(
+    name: str, force: bool = False, git: bool = False, tags: list[str] | None = None
+) -> None:
     """
     Initialise a new project using a standard structure, with optional toggle to also
     initialise a git repository.
@@ -56,13 +53,14 @@ def init_project(name: str, force: bool = False, git: bool = False) -> None:
         Toggle to overwrite an existing local directory with the same name.
     git:
         Toggle to initialise a git repository at the same time.
+    tags:
+        Optional project tags.
 
     """
 
     typer.echo(f"Initialising '{name}' project...")
 
     project_path = pathlib.Path(name)
-
     if project_path.exists() and not force:
         typer.echo(
             f"Error: Directory '{name}' already exists. Use --force to overwrite."
@@ -71,8 +69,7 @@ def init_project(name: str, force: bool = False, git: bool = False) -> None:
 
     typer.echo("  ...creating main directory tree...", nl=False)
     project_path.mkdir(parents=True, exist_ok=True)
-    for subdir in PROJECT_DIRS:
-        (project_path / subdir).mkdir(parents=True, exist_ok=True)
+    create_tree(project_path, PROJECT_STRUCTURE)
     typer.echo(typer.style("success!", fg=typer.colors.GREEN, bold=True))
 
     typer.echo("  ...initialising config files...", nl=False)
@@ -81,6 +78,14 @@ def init_project(name: str, force: bool = False, git: bool = False) -> None:
     for filename, template in CONFIG_FILES.items():
         content = template.format(name, now) if "{}" in template else template
         (config_dir / filename).write_text(content)
+    project_metadata = {
+        "project_name": name,
+        "created": now,
+        "tags": tags or [],
+    }
+
+    project_yaml = config_dir / "project.yaml"
+    project_yaml.write_text(yaml.safe_dump(project_metadata, sort_keys=False))
     typer.echo(typer.style("success!", fg=typer.colors.GREEN, bold=True))
 
     typer.echo("  ...creating PMTK project files...", nl=False)

@@ -10,22 +10,31 @@ Core functions for operations concerning units of work.
 """
 
 import pathlib
-import yaml
+
 import typer
+import yaml
 
-from pmtk.utils import find_project_root
+from pmtk.utils import find_project_root, PROJECT_STRUCTURE
 
 
-REQUIRED_DIRS = [
-    "config",
-    "data",
-    "docs",
-    "environments",
-    "logs",
-    "results",
-    "workspace",
-    "archive",
-]
+def check_tree(base: pathlib.Path, tree: dict, prefix: str | None = None) -> list[str]:
+    """
+    Return a list of missing paths (relative).
+
+    """
+
+    missing = []
+
+    for name, subtree in tree.items():
+        path = base / name
+        rel = f"{prefix}{name}"
+        if not path.exists():
+            missing.append(rel + "/")
+        elif subtree:
+            missing.extend(check_tree(path, subtree, prefix=rel + "/"))
+
+    return missing
+
 
 def status() -> None:
     """
@@ -34,9 +43,8 @@ def status() -> None:
     """
 
     project_root = find_project_root()
-
-    if not project_root:
-        typer.echo("Not inside a pmtk project (no .pmtk-lock found).")
+    if project_root is None:
+        typer.echo("Error: Not in a pmtk project. No .pmtk-lock file found.", err=True)
         raise typer.Exit(code=1)
 
     typer.echo(f"pmtk project detected: {project_root.name}")
@@ -54,7 +62,19 @@ def status() -> None:
     project_yaml = project_root / "config" / "project.yaml"
     if project_yaml.exists():
         typer.echo("Project metadata:")
-        typer.echo(project_yaml.read_text().strip())
+        data = yaml.safe_load(project_yaml.read_text()) or {}
+
+        name = data.get("project_name", "<unknown>")
+        created = data.get("created", "<unknown>")
+        tags = data.get("tags", [])
+
+        typer.echo(f"  Name: {name}")
+        typer.echo(f"  Created: {created}")
+
+        if tags:
+            typer.echo(f"  Tags: {', '.join(tags)}")
+        else:
+            typer.echo("  Tags: (none)")
     else:
         typer.echo("  Project metadata missing (config/project.yaml)")
 
@@ -62,9 +82,10 @@ def status() -> None:
 
     typer.echo("Directory structure:")
 
-    for d in REQUIRED_DIRS:
-        path = project_root / d
-        if path.exists():
-            typer.echo(f"  {d}/")
-        else:
-            typer.echo(f"  {d}/ (missing)")
+    missing = check_tree(project_root, PROJECT_STRUCTURE)
+    if not missing:
+        typer.echo("  Directory structure complete")
+    else:
+        typer.echo("  Missing directories:")
+        for m in missing:
+            typer.echo(f"    - {m}")

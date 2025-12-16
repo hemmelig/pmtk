@@ -21,8 +21,8 @@ from pmtk.core.work_units import (
 app = typer.Typer(help="Utilities for operating on work units.")
 
 
-@app.command("register")
-def register(
+@app.command("add")
+def add(
     unit_name: str = typer.Argument(..., help="Name of the work unit"),
     description: str = typer.Option(
         "", "--description", "-d", help="Description of the work unit"

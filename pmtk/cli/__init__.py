@@ -13,12 +13,16 @@ import typer
 
 from pmtk.core.init import init_project
 from pmtk.core.status import status as status_cmd
+from .datasets import app as datasets_app
+from .tags import app as tag_app
 from .work_units import app as work_unit_app
 
 
 app = typer.Typer(help="Project Management Toolkit (pmtk)")
 
-app.add_typer(work_unit_app, name="work_units")
+app.add_typer(work_unit_app, name="unit")
+app.add_typer(datasets_app, name="data")
+app.add_typer(tag_app, name="tag")
 
 
 @app.command("init")
@@ -26,6 +30,11 @@ def init(
     project_name: str = typer.Argument(..., help="Name of the project"),
     force: bool = typer.Option(False, "--force", help="Overwrite existing directory"),
     git: bool = typer.Option(False, "--git", help="Initialise git repository"),
+    tag: list[str] = typer.Option(
+        None,
+        "--tag",
+        help="Project tag (can be repeated)",
+    ),
 ) -> None:
     """
     Create a new project with a standard structure.
@@ -41,7 +50,7 @@ def init(
 
     """
 
-    init_project(project_name, force=force, git=git)
+    init_project(project_name, force=force, git=git, tags=tag)
 
 
 @app.command("status")

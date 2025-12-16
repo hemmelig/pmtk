@@ -12,6 +12,44 @@ General utilities for the pmtk package.
 import pathlib
 
 
+PROJECT_STRUCTURE = {
+    "archive": {},
+    "config": {},
+    "data": {
+        "external": {},
+        "internal": {},
+        "processed": {},
+        "metadata": {},
+    },
+    "docs": {
+        "proposal-and-contract": {},
+        "budget": {},
+        "publications-and-outreach": {},
+        "risks": {},
+        "status": {},
+        "workplan": {},
+    },
+    "environments": {},
+    "logs": {
+        "pmtk": {},
+        "pipeline": {},
+    },
+    "maps": {},
+    "notes": {},
+    "reports": {
+        "drafts": {},
+        "final": {},
+    },
+    "results": {
+        "figures": {},
+        "tables": {},
+        "models": {},
+    },
+    "tools": {},
+    "workspace": {},
+}
+
+
 def find_project_root(start_path: pathlib.Path | None = None) -> pathlib.Path | None:
     """
     Find the project root by looking for .pmtk-lock file.
