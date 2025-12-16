@@ -15,7 +15,7 @@ from datetime import datetime as dt, UTC
 import typer
 import yaml
 
-from pmtk.core.datasets import load_registry, save_registry
+from pmtk.core.metadata import load_data_registry, save_data_registry
 from pmtk.utils import find_project_root
 
 
@@ -93,7 +93,7 @@ def add(
     metadata_path.write_text(yaml.safe_dump(metadata, sort_keys=False))
 
     registry_path = project_root / "config" / "data_registry.yaml"
-    registry = load_registry(registry_path)
+    registry = load_data_registry(registry_path)
 
     registry.setdefault("datasets", {})[dataset_id] = {
         "title": title,
@@ -107,6 +107,6 @@ def add(
         "added": now,
     }
 
-    save_registry(registry_path, registry)
+    save_data_registry(registry_path, registry)
 
     typer.echo(f"  Dataset '{dataset_id}' registered.")

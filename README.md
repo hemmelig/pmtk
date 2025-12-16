@@ -24,12 +24,9 @@ I am using this to improve the reliability and reproducibility of my projects, a
 <project_name>/
 ├── archive/
 ├── config/
-│   ├── contacts.yaml
 │   ├── data_registry.yaml
-│   ├── environment.yaml
 │   ├── project.yaml
-│   └── registry.yaml
-│   ├── tasks.yaml
+│   └── unit_registry.yaml
 ├── data/
 │   ├── external/
 │   ├── internal/

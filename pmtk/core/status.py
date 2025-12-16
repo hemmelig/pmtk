@@ -15,6 +15,7 @@ import typer
 import yaml
 
 from pmtk.utils import find_project_root, PROJECT_STRUCTURE
+from .metadata import load_data_registry, load_project_metadata
 
 
 def check_tree(base: pathlib.Path, tree: dict, prefix: str | None = None) -> list[str]:
@@ -50,34 +51,52 @@ def status() -> None:
     typer.echo(f"pmtk project detected: {project_root.name}")
     typer.echo("")
 
-    lockfile = project_root / ".pmtk-lock"
-    if lockfile.exists():
-        typer.echo("Lockfile: present")
-        typer.echo(lockfile.read_text().strip())
-    else:
-        typer.echo("  Lockfile: missing")
+    try:
+        project = load_project_metadata(project_root)
+    except FileNotFoundError:
+        typer.echo("  Missing config/project.yaml\n")
+        project = {}
 
+    typer.echo("Project:")
+
+    name = project.get("project_name", "<unknown>")
+    status_ = project.get("status", "<unknown>")
+    tags = project.get("tags", [])
+    contacts = project.get("contacts", {})
+
+    typer.echo(f"  Name: {name}")
+    typer.echo(f"  Status: {status_}")
+
+    if tags:
+        typer.echo(f"  Tags: {', '.join(tags)}")
+    else:
+        typer.echo("  Tags: (none)")
+
+    owner = contacts.get("owner")
+    if owner:
+        typer.echo(f"  Owner: {owner}")
     typer.echo("")
 
-    project_yaml = project_root / "config" / "project.yaml"
-    if project_yaml.exists():
-        typer.echo("Project metadata:")
-        data = yaml.safe_load(project_yaml.read_text()) or {}
+    registry = load_data_registry(project_root)
+    datasets = registry.get("datasets", [])
 
-        name = data.get("project_name", "<unknown>")
-        created = data.get("created", "<unknown>")
-        tags = data.get("tags", [])
+    typer.echo("Data:")
+    typer.echo(f"  Registered datasets: {len(datasets)}")
+    typer.echo("")
 
-        typer.echo(f"  Name: {name}")
-        typer.echo(f"  Created: {created}")
+    workspace = project_root / "workspace"
+    archive = project_root / "archive"
 
-        if tags:
-            typer.echo(f"  Tags: {', '.join(tags)}")
-        else:
-            typer.echo("  Tags: (none)")
-    else:
-        typer.echo("  Project metadata missing (config/project.yaml)")
+    active_units = (
+        len([p for p in workspace.iterdir() if p.is_dir()]) if workspace.exists() else 0
+    )
+    archived_units = (
+        len([p for p in archive.iterdir() if p.is_dir()]) if archive.exists() else 0
+    )
 
+    typer.echo("Work units:")
+    typer.echo(f"  Active: {active_units}")
+    typer.echo(f"  Archived: {archived_units}")
     typer.echo("")
 
     typer.echo("Directory structure:")
@@ -89,3 +108,20 @@ def status() -> None:
         typer.echo("  Missing directories:")
         for m in missing:
             typer.echo(f"    - {m}")
+    typer.echo("")
+
+    lockfile = project_root / ".pmtk-lock"
+    if lockfile.exists():
+        typer.echo("Lockfile: present")
+        try:
+            lock = yaml.safe_load(lockfile.read_text()) or {}
+        except Exception:
+            typer.echo("    Could not read .pmtk-lock")
+            return
+
+        typer.echo(f"  pmtk version: {lock.get('pmtk_version', '<unknown>')}")
+        typer.echo(f"  Schema version: {lock.get('schema_version', '<unknown>')}")
+    else:
+        typer.echo("  Lockfile: missing")
+
+    typer.echo("")

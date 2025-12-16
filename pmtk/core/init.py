@@ -20,16 +20,6 @@ from pmtk.templates import get_template
 from pmtk.utils import PROJECT_STRUCTURE
 
 
-CONFIG_FILES = {
-    "project.yaml": "project_name: {}\ncreated: {}\n",
-    "data_registry.yaml": "",
-    "environment.yaml": "",
-    "contacts.yaml": "",
-    "tasks.yaml": "",
-    "registry.yaml": "",
-}
-
-
 def create_tree(base: pathlib.Path, tree: dict) -> None:
     for name, subtree in tree.items():
         path = base / name
@@ -75,31 +65,47 @@ def init_project(
     typer.echo("  ...initialising config files...", nl=False)
     config_dir = project_path / "config"
     now = dt.now(UTC).isoformat()
-    for filename, template in CONFIG_FILES.items():
-        content = template.format(name, now) if "{}" in template else template
-        (config_dir / filename).write_text(content)
     project_metadata = {
         "project_name": name,
         "created": now,
-        "tags": tags or [],
+        "tags": [],
+        "status": "active",
+        "contacts": {
+            "owner": "",
+            "collaborators": [],
+        },
     }
 
-    project_yaml = config_dir / "project.yaml"
-    project_yaml.write_text(yaml.safe_dump(project_metadata, sort_keys=False))
+    (config_dir / "project.yaml").write_text(
+        yaml.safe_dump(project_metadata, sort_keys=False)
+    )
     typer.echo(typer.style("success!", fg=typer.colors.GREEN, bold=True))
 
+    (config_dir / "data_registry.yaml").write_text(
+        yaml.safe_dump({"datasets": []}, sort_keys=False)
+    )
+
     typer.echo("  ...creating PMTK project files...", nl=False)
-    readme = project_path / "README.md"
-    readme.write_text(f"# {name}\n\nProject initialised by pmtk on {now}\n")
+    (project_path / "README.md").write_text(
+        f"# {name}\n\nProject initialised by pmtk on {now}\n"
+    )
 
-    lock = project_path / ".pmtk-lock"
-    lock.write_text(f"pmtk_version: 0.1.0\ncreated: {now}\n")
+    (project_path / ".pmtk-lock").write_text(
+        yaml.safe_dump(
+            {
+                "pmtk_version": "0.1.0",
+                "schema_version": 1,
+                "created": now,
+            },
+            sort_keys=False,
+        )
+    )
 
-    pmignore = project_path / ".pmignore"
-    pmignore.write_text("# Add internal or private files here\n")
+    (project_path / ".pmignore").write_text("# Add internal or private files here\n")
 
-    pre_commit = project_path / ".pre-commit-config.yaml"
-    pre_commit.write_text(get_template("pre-commit-config.yaml"))
+    (project_path / ".pre-commit-config.yaml").write_text(
+        get_template("pre-commit-config.yaml")
+    )
     typer.echo(typer.style("success!", fg=typer.colors.GREEN, bold=True))
 
     if git:

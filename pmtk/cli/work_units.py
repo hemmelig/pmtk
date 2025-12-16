@@ -14,7 +14,7 @@ import typer
 from pmtk.core.work_units import (
     register_work_unit,
     archive_work_unit,
-    unarchive_work_unit,
+    restore_work_unit,
 )
 
 
@@ -69,12 +69,12 @@ def archive(
     archive_work_unit(unit_name)
 
 
-@app.command("unarchive")
-def unarchive(
-    unit_name: str = typer.Argument(..., help="Name of the work unit to unarchive"),
+@app.command("restore")
+def restore(
+    unit_name: str = typer.Argument(..., help="Name of the work unit to restore"),
 ) -> None:
     """
-    Unarchive a work unit by moving it from archive/ back to workspace/.
+    Restore a work unit by moving it from archive/ back to workspace/.
 
     Updates the registry to mark the unit as active.
 
@@ -85,4 +85,4 @@ def unarchive(
 
     """
 
-    unarchive_work_unit(unit_name)
+    restore_work_unit(unit_name)

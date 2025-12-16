@@ -14,9 +14,9 @@ import shutil
 from datetime import datetime as dt, UTC
 
 import typer
-import yaml
 
 from pmtk.utils import find_project_root
+from .metadata import load_unit_registry, save_unit_registry
 
 
 def _work_unit_exists(project_root: pathlib.Path, unit_name: str) -> bool:
@@ -79,31 +79,28 @@ def register_work_unit(
     unit_path = workspace_dir / unit_name
     unit_path.mkdir(parents=True, exist_ok=True)
 
+    description = description or ""
     readme = unit_path / "README.md"
-    description = "" if description is None else description
     readme.write_text(f"# {unit_name}\n\n{description}\n")
 
-    registry_path = project_root / "config" / "registry.yaml"
-    if registry_path.exists() and registry_path.stat().st_size > 0:
-        with open(registry_path, "r") as f:
-            registry = yaml.safe_load(f) or {}
-    else:
-        registry = {}
+    registry = load_unit_registry(project_root)
+    units = registry.setdefault("work_units", {})
 
-    if "work_units" not in registry:
-        registry["work_units"] = []
+    if unit_name in units:
+        typer.echo(
+            f"Error: Work unit '{unit_name}' already registered in registry.",
+            err=True,
+        )
+        raise typer.Exit(code=1)
 
-    entry = {
-        "name": unit_name,
+    units[unit_name] = {
         "created": dt.now(UTC).isoformat(),
         "status": "active",
+        "path": f"workspace/{unit_name}",
         "description": description,
         "tags": tags or [],
     }
-    registry["work_units"].append(entry)
-
-    with open(registry_path, "w") as f:
-        yaml.dump(registry, f, default_flow_style=False, sort_keys=False)
+    save_unit_registry(project_root, registry)
 
     typer.echo(f"Work unit '{unit_name}' registered successfully at {unit_path}")
 
@@ -128,46 +125,37 @@ def archive_work_unit(unit_name: str) -> None:
 
     unit_path = project_root / "workspace" / unit_name
     archive_path = project_root / "archive" / unit_name
-    registry_path = project_root / "config" / "registry.yaml"
 
     if not unit_path.exists():
         typer.echo(f"Error: Work unit '{unit_name}' not found in workspace.", err=True)
         raise typer.Exit(code=1)
 
-    if not registry_path.exists():
-        typer.echo("Error: Registry not found.", err=True)
-        raise typer.Exit(code=1)
+    registry = load_unit_registry(project_root)
+    units = registry.setdefault("work_units", {})
 
-    with open(registry_path, "r") as f:
-        registry = yaml.safe_load(f) or {}
-
-    if "work_units" not in registry:
-        typer.echo("Error: No work units found in registry.", err=True)
-        raise typer.Exit(code=1)
-
-    work_unit = None
-    for unit in registry["work_units"]:
-        if unit["name"] == unit_name:
-            work_unit = unit
-            break
-
-    if work_unit is None:
+    work_unit = units.get(unit_name)
+    if not work_unit:
         typer.echo(f"Error: Work unit '{unit_name}' not found in registry.", err=True)
         raise typer.Exit(code=1)
 
     shutil.move(str(unit_path), str(archive_path))
 
-    work_unit["status"] = "archived"
-    work_unit["archived"] = dt.now(UTC).isoformat()
-    with open(registry_path, "w") as f:
-        yaml.dump(registry, f, default_flow_style=False, sort_keys=False)
+    work_unit.update(
+        {
+            "status": "archived",
+            "archived_at": dt.now(UTC).isoformat(),
+            "path": f"archive/{unit_name}",
+        }
+    )
+
+    save_unit_registry(project_root, registry)
 
     typer.echo(f"Work unit '{unit_name}' archived successfully to {archive_path}")
 
 
-def unarchive_work_unit(unit_name: str) -> None:
+def restore_work_unit(unit_name: str) -> None:
     """
-    Unarchive a work unit by moving it from archive/ back to workspace/.
+    Restore a work unit by moving it from archive/ back to workspace/.
 
     Updates the registry to mark the unit as active and removes the archive timestamp.
 
@@ -185,40 +173,30 @@ def unarchive_work_unit(unit_name: str) -> None:
 
     unit_path = project_root / "workspace" / unit_name
     archive_path = project_root / "archive" / unit_name
-    registry_path = project_root / "config" / "registry.yaml"
 
     if not archive_path.exists():
         typer.echo(f"Error: Work unit '{unit_name}' not found in archive.", err=True)
         raise typer.Exit(code=1)
 
-    if not registry_path.exists():
-        typer.echo("Error: Registry not found.", err=True)
-        raise typer.Exit(code=1)
+    registry = load_unit_registry(project_root)
+    units = registry.setdefault("work_units", {})
 
-    with open(registry_path, "r") as f:
-        registry = yaml.safe_load(f) or {}
-
-    if "work_units" not in registry:
-        typer.echo("Error: No work units found in registry.", err=True)
-        raise typer.Exit(code=1)
-
-    work_unit = None
-    for unit in registry["work_units"]:
-        if unit["name"] == unit_name:
-            work_unit = unit
-            break
-
-    if work_unit is None:
+    work_unit = units.get(unit_name)
+    if not work_unit:
         typer.echo(f"Error: Work unit '{unit_name}' not found in registry.", err=True)
         raise typer.Exit(code=1)
 
     shutil.move(str(archive_path), str(unit_path))
 
-    work_unit["status"] = "active"
-    if "archived" in work_unit:
-        del work_unit["archived"]
+    work_unit.update(
+        {
+            "status": "active",
+            "path": f"workspace/{unit_name}",
+        }
+    )
+    if "archived_at" in work_unit:
+        del work_unit["archived_at"]
 
-    with open(registry_path, "w") as f:
-        yaml.dump(registry, f, default_flow_style=False, sort_keys=False)
+    save_unit_registry(project_root, registry)
 
     typer.echo(f"Work unit '{unit_name}' unarchived successfully to {unit_path}")
