@@ -84,16 +84,15 @@ def register_work_unit(
     readme.write_text(f"# {unit_name}\n\n{description}\n")
 
     registry = load_unit_registry(project_root)
-    units = registry.setdefault("work_units", {})
 
-    if unit_name in units:
+    if unit_name in registry["work_units"]:
         typer.echo(
             f"Error: Work unit '{unit_name}' already registered in registry.",
             err=True,
         )
         raise typer.Exit(code=1)
 
-    units[unit_name] = {
+    registry["work_units"][unit_name] = {
         "created": dt.now(UTC).isoformat(),
         "status": "active",
         "path": f"workspace/{unit_name}",
@@ -131,9 +130,8 @@ def archive_work_unit(unit_name: str) -> None:
         raise typer.Exit(code=1)
 
     registry = load_unit_registry(project_root)
-    units = registry.setdefault("work_units", {})
 
-    work_unit = units.get(unit_name)
+    work_unit = registry["work_units"].get(unit_name)
     if not work_unit:
         typer.echo(f"Error: Work unit '{unit_name}' not found in registry.", err=True)
         raise typer.Exit(code=1)
@@ -179,9 +177,8 @@ def restore_work_unit(unit_name: str) -> None:
         raise typer.Exit(code=1)
 
     registry = load_unit_registry(project_root)
-    units = registry.setdefault("work_units", {})
 
-    work_unit = units.get(unit_name)
+    work_unit = registry["work_units"].get(unit_name)
     if not work_unit:
         typer.echo(f"Error: Work unit '{unit_name}' not found in registry.", err=True)
         raise typer.Exit(code=1)

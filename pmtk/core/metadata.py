@@ -72,9 +72,9 @@ def load_data_registry(project_root: pathlib.Path) -> dict:
 
     registry_path = project_root / "config" / "data_registry.yaml"
     if not registry_path.exists():
-        return {"datasets": []}
+        return {"datasets": {}}
 
-    return yaml.safe_load(registry_path.read_text()) or {"datasets": []}
+    return yaml.safe_load(registry_path.read_text()) or {"datasets": {}}
 
 
 def save_data_registry(project_root: pathlib.Path, data: dict) -> None:
@@ -112,9 +112,9 @@ def load_unit_registry(project_root: pathlib.Path) -> dict:
 
     registry_path = project_root / "config" / "unit_registry.yaml"
     if not registry_path.exists():
-        return {"units": {}}
+        return {"work_units": {}}
 
-    return yaml.safe_load(registry_path.read_text()) or {"units": {}}
+    return yaml.safe_load(registry_path.read_text()) or {"work_units": {}}
 
 
 def save_unit_registry(project_root: pathlib.Path, data: dict) -> None:

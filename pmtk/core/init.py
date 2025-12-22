@@ -87,7 +87,9 @@ def init_project(
 
     typer.echo("  ...creating PMTK project files...", nl=False)
     (project_path / "README.md").write_text(
-        f"# {name}\n\nProject initialised by pmtk on {now}\n"
+        f"# {name}\n\n## Project Management\n\nThis project is managed using the "
+        "[Project Management ToolKit](https://github.com/hemmelig/pmtk).\n\n"
+        f"Project initialised by pmtk on {now}\n"
     )
 
     (project_path / ".pmtk-lock").write_text(

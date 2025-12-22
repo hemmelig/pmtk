@@ -89,9 +89,12 @@ Some of the basic commands are shown below:
 
 ```bash
 pmtk init <project_name> [--git]
-pmtk data register <path>
-pmtk work_unit add <unit-name>
-pmtk work_unit archive <unit-name>
+pmtk data add <path>
+pmtk data show <path>
+pmtk data fetch <path>
+pmtk unit add <unit-name>
+pmtk unit archive <unit-name>
+pmtk unit restore <unit-name>
 pmtk status
 pmtk tag <project-tag>
 ```
