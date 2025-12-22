@@ -10,11 +10,13 @@ authors = [
 ]
 
 dependencies = [
-    "typer>=0.12",
-    "rich>=13",
-    "ruff",
+    "pooch",
     "pre-commit",
     "pyyaml",
+    "requests",
+    "rich",
+    "ruff",
+    "typer",
 ]
 
 [project.scripts]

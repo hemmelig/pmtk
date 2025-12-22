@@ -1,5 +1,5 @@
 """
-Top-level CLI for pmtk.
+Modular CLI application for operations concerning datasets.
 
 :copyright:
     2025, Conor A. Bacon
@@ -10,13 +10,10 @@ Top-level CLI for pmtk.
 """
 
 import pathlib
-from datetime import datetime as dt, UTC
 
 import typer
-import yaml
 
-from pmtk.core.metadata import load_data_registry, save_data_registry
-from pmtk.utils import find_project_root
+from pmtk.core.datasets import add_dataset, fetch_dataset, report_dataset
 
 
 app = typer.Typer(help="Utilities for operating on dataset.")
@@ -26,15 +23,19 @@ app = typer.Typer(help="Utilities for operating on dataset.")
 def add(
     dataset_id: str = typer.Argument(..., help="Dataset identifier"),
     title: str = typer.Option(..., help="Human-readable title"),
-    path: pathlib.Path | None = typer.Option(
-        None, "--path", help="Optional local file or directory"
+    dtype: str = typer.Option(
+        "external", "--type", help="external | internal | processed"
     ),
-    remote: str | None = typer.Option(
-        None, "--remote", help="Remote dataset URI (e.g., Zenodo DOI)"
+    local_path: pathlib.Path | None = typer.Option(
+        None, "--local-path", help="Optional local file or directory"
     ),
-    source: str | None = typer.Option(None),
-    url: str | None = typer.Option(None),
+    inspect_remote: bool = typer.Option(
+        False, "--inspect-remote", help="Query Zenodo to list dataset files"
+    ),
+    remote_provider: str | None = typer.Option(None, "--remote-provider"),
+    remote_id: str | None = typer.Option(None, "--remote-id"),
     license: str | None = typer.Option(None),
+    owner: str | None = typer.Option(None, "--owner"),
 ) -> None:
     """
     Register a new dataset to project.
@@ -60,53 +61,37 @@ def add(
 
     """
 
-    project_root = find_project_root()
-    if project_root is None:
-        typer.echo("Error: Not in a pmtk project. No .pmtk-lock file found.", err=True)
-        raise typer.Exit(code=1)
+    add_dataset(
+        dataset_id,
+        title=title,
+        dtype=dtype,
+        local_path=local_path,
+        remote_provider=remote_provider,
+        remote_id=remote_id,
+        inspect_remote=inspect_remote,
+        license=license,
+        owner=owner,
+    )
 
-    now = dt.now(UTC).isoformat() + "Z"
 
-    metadata_dir = project_root / "data" / "metadata"
-    metadata_dir.mkdir(parents=True, exist_ok=True)
+@app.command("show")
+def data_show(dataset_id: str = typer.Argument(...)):
+    """
+    Show detailed metadata for a registered dataset.
+    """
 
-    metadata_path = metadata_dir / f"{dataset_id}.yaml"
+    report_dataset(dataset_id)
 
-    metadata = {
-        "id": dataset_id,
-        "title": title,
-        "type": "external",
-        "provenance": {
-            "source": source,
-            "url": url,
-            "accessed": now,
-        },
-        "ownership": {
-            "license": license,
-        },
-        "storage": {
-            "local": str(path) if path else None,
-            "remote": remote,
-        },
-    }
 
-    metadata_path.write_text(yaml.safe_dump(metadata, sort_keys=False))
+@app.command("fetch")
+def data_fetch(
+    dataset_id: str = typer.Argument(..., help="Dataset identifier"),
+    dry_run: bool = typer.Option(False, "--dry-run"),
+    force: bool = typer.Option(False, "--force"),
+    no_unpack: bool = typer.Option(False, "--no-unpack"),
+):
+    """
+    Fetch remote dataset files and materialise them locally.
+    """
 
-    registry_path = project_root / "config" / "data_registry.yaml"
-    registry = load_data_registry(registry_path)
-
-    registry.setdefault("datasets", {})[dataset_id] = {
-        "title": title,
-        "type": "external",
-        "status": "active",
-        "storage": {
-            "local": str(path) if path else None,
-            "remote": remote,
-        },
-        "metadata": str(metadata_path.relative_to(project_root)),
-        "added": now,
-    }
-
-    save_data_registry(registry_path, registry)
-
-    typer.echo(f"  Dataset '{dataset_id}' registered.")
+    fetch_dataset(dataset_id, dry_run, force, no_unpack)
