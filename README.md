@@ -56,6 +56,87 @@ I am using this to improve the reliability and reproducibility of my projects, a
 
 ---
 
+## Python environments with uv
+
+PMTK does not manage Python environments directly. Each work unit can optionally be initialised as a uv project, making the environment reproducible and self-contained.
+
+### Requirements
+
+Install uv:
+
+```bash
+curl -Ls https://astral.sh/uv/install.sh | sh
+```
+
+or:
+
+```bash
+pipx install uv
+```
+
+### Creating a uv-enabled work unit
+
+```bash
+pmtk add my-unit --uv
+```
+
+This will:
+- create the work unit directory
+- run `uv init`
+- create a `pyproject.toml`
+
+Add dependencies:
+
+```bash
+cd workspace/my-unit
+uv add pandas jupyter
+uv lock
+```
+
+### Recreating the environment
+
+The environment is defined by:
+
+- `pyproject.toml`
+- `uv.lock` (if committed)
+
+Recreate it with:
+
+```bash
+uv sync
+```
+
+### What to commit
+
+Commit:
+
+```text
+pyproject.toml
+uv.lock
+.python-version
+```
+
+### Running code
+
+```bash
+uv run python script.py
+```
+
+### Notes
+
+- Each work unit may define its own environment
+- Environments are declared via files, not stored
+- `.venv` is local and disposable
+- uv handles dependency resolution and synchronisation
+
+### Lightweight usage
+
+For simple scripts without a project:
+
+```bash
+uv run --with pandas python script.py
+```
+
 ## Design Principles
 
 ### **1. Reproducible**

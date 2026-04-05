@@ -30,6 +30,9 @@ def add(
     tags: list[str] = typer.Option(
         None, "--tag", "-t", help="Tags for categorisation (can be used multiple times)"
     ),
+    uv: bool = typer.Option(
+        False, "--uv", help="Initialise as a uv-managed Python project"
+    ),
 ) -> None:
     """
     Register a new unit of work in the workspace.
@@ -44,10 +47,12 @@ def add(
         Optional description of the work unit.
     tags:
         Optional tags for the work unit, which can be used to filter work units.
+    uv:
+        If True, initialise a uv project in the new work unit.
 
     """
 
-    register_work_unit(unit_name, description=description, tags=tags)
+    register_work_unit(unit_name, description=description, tags=tags, uv=uv)
 
 
 @app.command("archive")

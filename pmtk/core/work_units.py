@@ -11,12 +11,34 @@ Core functions for operations concerning units of work.
 
 import pathlib
 import shutil
+import subprocess
 from datetime import datetime as dt, UTC
 
 import typer
 
 from pmtk.utils import find_project_root
 from .metadata import load_unit_registry, save_yaml, work_unit_registry_path
+
+
+def _run_uv_init(path: pathlib.Path) -> None:
+    """Utility to initialise a uv project, if requested."""
+
+    try:
+        subprocess.run(
+            ["uv", "init"],
+            cwd=path,
+            check=True,
+        )
+    except FileNotFoundError:
+        typer.echo(
+            "Error: uv is not installed or not on PATH.\n"
+            "Install it from https://astral.sh/uv/",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+    except subprocess.CalledProcessError:
+        typer.echo("Error: Failed to run 'uv init'", err=True)
+        raise typer.Exit(code=1)
 
 
 def _work_unit_exists(project_root: pathlib.Path, unit_name: str) -> bool:
@@ -44,7 +66,10 @@ def _work_unit_exists(project_root: pathlib.Path, unit_name: str) -> bool:
 
 
 def register_work_unit(
-    unit_name: str, description: str | None = None, tags: list[str] = None
+    unit_name: str,
+    description: str | None = None,
+    tags: list[str] = None,
+    uv: bool = False,
 ) -> None:
     """
     Register a new unit of work in the workspace.
@@ -59,6 +84,8 @@ def register_work_unit(
         Optional description of the work unit.
     tags:
         Optional list of tags for categorization.
+    uv:
+        If True, initialise a uv project in the new work unit.
 
     """
 
@@ -79,6 +106,10 @@ def register_work_unit(
     description = description or ""
     readme = unit_path / "README.md"
     readme.write_text(f"# {unit_name}\n\n{description}\n")
+
+    if uv:
+        typer.echo("Initializing uv project...")
+        _run_uv_init(unit_path)
 
     registry = load_unit_registry()
 

@@ -104,7 +104,7 @@ def init_project(
 
     (project_path / ".pmignore").write_text("# Add internal or private files here\n")
     (project_path / ".gitignoer").write_text(
-        "data/external/\ndata/processed/\n.DS_Store\n"
+        "data/external/\ndata/processed/\n.DS_Store\n.venv/\n"
     )
 
     (project_path / ".pre-commit-config.yaml").write_text(
