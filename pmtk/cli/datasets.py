@@ -1,112 +1,108 @@
 """
-Top-level CLI for pmtk.
+Modular CLI application for operations concerning datasets.
 
 :copyright:
-    2025, Conor A. Bacon
+    2026, Conor A. Bacon
 :license:
     GNU General Public License, Version 3
     (https://www.gnu.org/licenses/gpl-3.0.html)
 
 """
 
-import pathlib
-from datetime import datetime as dt, UTC
-
 import typer
-import yaml
 
-from pmtk.core.metadata import load_data_registry, save_data_registry
-from pmtk.utils import find_project_root
+from pmtk.core.datasets import (
+    fetch_record_files,
+    register_dataset_record,
+    scan_dataset_record,
+)
 
 
-app = typer.Typer(help="Utilities for operating on dataset.")
+app = typer.Typer(help="Utilities for operating on datasets.")
 
 
-@app.command("add")
-def add(
+@app.command("add-record")
+def add_record(
     dataset_id: str = typer.Argument(..., help="Dataset identifier"),
     title: str = typer.Option(..., help="Human-readable title"),
-    path: pathlib.Path | None = typer.Option(
-        None, "--path", help="Optional local file or directory"
+    doi: str = typer.Option(
+        ..., "--doi", help="Zenodo DOI, e.g., 10.5281/zenodo.19350669"
     ),
-    remote: str | None = typer.Option(
-        None, "--remote", help="Remote dataset URI (e.g., Zenodo DOI)"
-    ),
-    source: str | None = typer.Option(None),
-    url: str | None = typer.Option(None),
-    license: str | None = typer.Option(None),
+    record_url: str = typer.Option(..., "--record-url", help="Zenodo record URL"),
+    source: str = typer.Option("Zenodo", "--source", help="Dataset source description"),
+    license: str | None = typer.Option(None, "--license", help="Dataset license"),
 ) -> None:
     """
-    Register a new dataset to project.
+    Register a Zenodo record as a PMTK dataset.
 
     Must be run from within a pmtk project directory.
 
     Parameters
     ----------
     dataset_id:
-        A unique identifier for the dataset.
+        Name/identifier for the dataset record.
     title:
-        A human-readable title for the dataset.
-    path:
-        Optional path to a file or directory containing the dataset.
-    remote:
-        Optional URI for remote dataset.
+        Human-readable name for the dataset record.
+    doi:
+        Digital Object Identifier for the dataset record.
+    record_url:
+        URL pointing to where the dataset record is stored.
     source:
-        Optional description of the source of the data.
-    url:
-        Optional URL pointing to source of dataset.
+        Source of the record, e.g., Zenodo.
     license:
-        Optional description of dataset license.
+        Optional license indicator.
 
     """
 
-    project_root = find_project_root()
-    if project_root is None:
-        typer.echo("Error: Not in a pmtk project. No .pmtk-lock file found.", err=True)
-        raise typer.Exit(code=1)
+    register_dataset_record(dataset_id, title, doi, record_url, source, license)
 
-    now = dt.now(UTC).isoformat() + "Z"
 
-    metadata_dir = project_root / "data" / "metadata"
-    metadata_dir.mkdir(parents=True, exist_ok=True)
+@app.command("fetch")
+def fetch(
+    dataset_id: str = typer.Argument(..., help="Dataset identifier"),
+    file_id: str | None = typer.Argument(None, help="Optional file identifier"),
+    all_files: bool = typer.Option(False, "--all", help="Fetch all registered files"),
+    force: bool = typer.Option(False, "--force", help="Overwrite project data"),
+) -> None:
+    """
+    Fetch one registered file or all files for a dataset.
 
-    metadata_path = metadata_dir / f"{dataset_id}.yaml"
+    Parameters
+    ----------
+    dataset_id:
+        Name/identifier for the dataset record.
+    file_id:
+        Name/identifier of file to be fetched.
+    all_files:
+        Optional toggle to fetch all files in record.
+    force:
+        Toggle to force overwrite existing data files.
 
-    metadata = {
-        "id": dataset_id,
-        "title": title,
-        "type": "external",
-        "provenance": {
-            "source": source,
-            "url": url,
-            "accessed": now,
-        },
-        "ownership": {
-            "license": license,
-        },
-        "storage": {
-            "local": str(path) if path else None,
-            "remote": remote,
-        },
-    }
+    """
 
-    metadata_path.write_text(yaml.safe_dump(metadata, sort_keys=False))
+    fetch_record_files(dataset_id, file_id, all_files, force)
 
-    registry_path = project_root / "config" / "data_registry.yaml"
-    registry = load_data_registry(registry_path)
 
-    registry.setdefault("datasets", {})[dataset_id] = {
-        "title": title,
-        "type": "external",
-        "status": "active",
-        "storage": {
-            "local": str(path) if path else None,
-            "remote": remote,
-        },
-        "metadata": str(metadata_path.relative_to(project_root)),
-        "added": now,
-    }
+@app.command("scan-record")
+def scan_record(
+    dataset_id: str = typer.Argument(..., help="Dataset identifier"),
+    overwrite: bool = typer.Option(
+        False,
+        "--overwrite",
+        help="Overwrite existing discovered file entries",
+    ),
+) -> None:
+    """
+    Discover files in a DOI-backed Zenodo record using pooch and store them in dataset
+    metadata.
 
-    save_data_registry(registry_path, registry)
+    Parameters
+    ----------
+    dataset_id:
+        Name/identifier for the dataset record.
+    overwrite:
+        If True, overwrite existing discovered file entries.
 
-    typer.echo(f"  Dataset '{dataset_id}' registered.")
+    """
+
+    scan_dataset_record(dataset_id, overwrite)

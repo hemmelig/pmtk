@@ -16,7 +16,7 @@ from datetime import datetime as dt, UTC
 import typer
 
 from pmtk.utils import find_project_root
-from .metadata import load_unit_registry, save_unit_registry
+from .metadata import load_unit_registry, save_yaml, work_unit_registry_path
 
 
 def _work_unit_exists(project_root: pathlib.Path, unit_name: str) -> bool:
@@ -49,7 +49,7 @@ def register_work_unit(
     """
     Register a new unit of work in the workspace.
 
-    Creates a directory in workspace/ and adds an entry to config/registry.yaml.
+    Creates a directory in workspace/ and adds an entry to .config/registry.yaml.
 
     Parameters
     ----------
@@ -63,9 +63,6 @@ def register_work_unit(
     """
 
     project_root = find_project_root()
-    if project_root is None:
-        typer.echo("Error: Not in a pmtk project. No .pmtk-lock file found.", err=True)
-        raise typer.Exit(code=1)
 
     workspace_dir = project_root / "workspace"
     if not workspace_dir.exists():
@@ -83,7 +80,7 @@ def register_work_unit(
     readme = unit_path / "README.md"
     readme.write_text(f"# {unit_name}\n\n{description}\n")
 
-    registry = load_unit_registry(project_root)
+    registry = load_unit_registry()
 
     if unit_name in registry["work_units"]:
         typer.echo(
@@ -99,7 +96,7 @@ def register_work_unit(
         "description": description,
         "tags": tags or [],
     }
-    save_unit_registry(project_root, registry)
+    save_yaml(work_unit_registry_path(), registry)
 
     typer.echo(f"Work unit '{unit_name}' registered successfully at {unit_path}")
 
@@ -118,9 +115,6 @@ def archive_work_unit(unit_name: str) -> None:
     """
 
     project_root = find_project_root()
-    if project_root is None:
-        typer.echo("Error: Not in a pmtk project. No .pmtk-lock file found.", err=True)
-        raise typer.Exit(code=1)
 
     unit_path = project_root / "workspace" / unit_name
     archive_path = project_root / "archive" / unit_name
@@ -129,7 +123,7 @@ def archive_work_unit(unit_name: str) -> None:
         typer.echo(f"Error: Work unit '{unit_name}' not found in workspace.", err=True)
         raise typer.Exit(code=1)
 
-    registry = load_unit_registry(project_root)
+    registry = load_unit_registry()
 
     work_unit = registry["work_units"].get(unit_name)
     if not work_unit:
@@ -146,7 +140,7 @@ def archive_work_unit(unit_name: str) -> None:
         }
     )
 
-    save_unit_registry(project_root, registry)
+    save_yaml(work_unit_registry_path(), registry)
 
     typer.echo(f"Work unit '{unit_name}' archived successfully to {archive_path}")
 
@@ -165,9 +159,6 @@ def restore_work_unit(unit_name: str) -> None:
     """
 
     project_root = find_project_root()
-    if project_root is None:
-        typer.echo("Error: Not in a pmtk project. No .pmtk-lock file found.", err=True)
-        raise typer.Exit(code=1)
 
     unit_path = project_root / "workspace" / unit_name
     archive_path = project_root / "archive" / unit_name
@@ -176,7 +167,7 @@ def restore_work_unit(unit_name: str) -> None:
         typer.echo(f"Error: Work unit '{unit_name}' not found in archive.", err=True)
         raise typer.Exit(code=1)
 
-    registry = load_unit_registry(project_root)
+    registry = load_unit_registry()
 
     work_unit = registry["work_units"].get(unit_name)
     if not work_unit:
@@ -194,6 +185,6 @@ def restore_work_unit(unit_name: str) -> None:
     if "archived_at" in work_unit:
         del work_unit["archived_at"]
 
-    save_unit_registry(project_root, registry)
+    save_yaml(work_unit_registry_path(), registry)
 
     typer.echo(f"Work unit '{unit_name}' unarchived successfully to {unit_path}")

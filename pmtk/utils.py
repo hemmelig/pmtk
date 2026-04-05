@@ -10,47 +10,40 @@ General utilities for the pmtk package.
 """
 
 import pathlib
+from datetime import datetime as dt, UTC
 
 
 PROJECT_STRUCTURE = {
     "archive": {},
-    "config": {},
+    ".config": {},
     "data": {
         "external": {},
         "internal": {},
-        "processed": {},
         "metadata": {},
+        "processed": {},
     },
     "docs": {
-        "proposal-and-contract": {},
         "budget": {},
-        "publications-and-outreach": {},
-        "risks": {},
-        "status": {},
+        "notes": {},
+        "proposal": {},
+        "publications": {},
+        "reports": {
+            "drafts": {},
+            "final": {},
+        },
         "workplan": {},
-    },
-    "environments": {},
-    "logs": {
-        "pmtk": {},
-        "pipeline": {},
-    },
-    "maps": {},
-    "notes": {},
-    "reports": {
-        "drafts": {},
-        "final": {},
     },
     "results": {
         "figures": {},
-        "tables": {},
         "models": {},
+        "tables": {},
     },
     "tools": {},
     "workspace": {},
 }
 
 
-def find_project_root(start_path: pathlib.Path | None = None) -> pathlib.Path | None:
+def find_project_root(start_path: pathlib.Path | None = None) -> pathlib.Path:
     """
     Find the project root by looking for .pmtk-lock file.
 
@@ -66,6 +59,11 @@ def find_project_root(start_path: pathlib.Path | None = None) -> pathlib.Path | 
     pathlib.Path or None:
         Path to project root if found, None otherwise.
 
+    Raises
+    ------
+    FileNotFoundError
+        If no .pmtk-lock file is found, i.e., not in a PMTK-managed project.
+
     """
 
     path = (start_path or pathlib.Path.cwd()).resolve()
@@ -73,4 +71,10 @@ def find_project_root(start_path: pathlib.Path | None = None) -> pathlib.Path | 
         if (parent / ".pmtk-lock").exists():
             return parent
 
-    return None
+    raise FileNotFoundError("not in a pmtk project. No .pmtk-lock file found.")
+
+
+def utc_now_iso() -> str:
+    """Utility to return an ISO-formatted datetime string for now."""
+
+    return dt.now(UTC).isoformat() + "Z"

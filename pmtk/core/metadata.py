@@ -10,125 +10,115 @@ Utilities for handling project metadata.
 """
 
 import pathlib
+from typing import Any, Mapping
 
+import typer
 import yaml
 
+from pmtk.utils import find_project_root
 
-def load_project_metadata(project_root: pathlib.Path) -> dict:
+
+def config_path(*parts: str) -> pathlib.Path:
+    return find_project_root() / ".config" / pathlib.Path(*parts)
+
+
+def project_metadata_path() -> pathlib.Path:
+    return config_path("project.yaml")
+
+
+def data_registry_path() -> pathlib.Path:
+    return config_path("data_registry.yaml")
+
+
+def work_unit_registry_path() -> pathlib.Path:
+    return config_path("unit_registry.yaml")
+
+
+def save_yaml(path: pathlib.Path, data: Mapping[str, Any]) -> None:
     """
-    Read project metadata.
+    Utility for writing out a keyed dataset to a YAML file.
 
     Parameters
     ----------
-    project_root:
-        Root path for the project.
+    path:
+        Directory to which to write the YAML file.
+    data:
+        Keyed dataset to be written to the YAML file.
+
+    """
+
+    path.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True))
+
+
+def load_yaml(file: pathlib.Path) -> dict:
+    """
+    Utility for loading a keyed dataset from a YAML file.
+
+    Parameters
+    ----------
+    file:
+        YAML file to be read.
+
+    """
+
+    if not file.exists():
+        typer.echo(f"Error: Missing file: {file}", err=True)
+        raise typer.Exit(code=1)
+
+    return yaml.safe_load(file.read_text()) or {}
+
+
+def load_project_metadata() -> dict:
+    """
+    Read project metadata.
 
     Returns
     -------
-     :
+    project_metadata:
         Project metadata.
 
-    """
-
-    path = project_root / "config" / "project.yaml"
-    if not path.exists():
-        raise FileNotFoundError("Missing config/project.yaml")
-
-    return yaml.safe_load(path.read_text()) or {}
-
-
-def save_project_metadata(project_root: pathlib.Path, data: dict) -> None:
-    """
-    Read project metadata.
-
-    Parameters
-    ----------
-    project_root:
-        Root path for the project.
-    data:
-        Project metadata to save.
+    Raises
+    ------
+    FileNotFoundError
+        If the user has decided to delete the project metadata file.
 
     """
 
-    path = project_root / "config" / "project.yaml"
-    path.write_text(yaml.safe_dump(data, sort_keys=False))
+    if not project_metadata_path().exists():
+        raise FileNotFoundError("Missing .config/project.yaml")
+
+    return yaml.safe_load(project_metadata_path().read_text()) or {}
 
 
-def load_data_registry(project_root: pathlib.Path) -> dict:
+def load_data_registry() -> dict:
     """
-    Read registry of datasets from project config file.
-
-    Parameters
-    ----------
-    project_root:
-        Root path for the project.
+    Read registry of datasets from config file.
 
     Returns
     -------
-     :
+    data_registry:
         Project dataset registry.
 
     """
 
-    registry_path = project_root / "config" / "data_registry.yaml"
-    if not registry_path.exists():
+    if not data_registry_path().exists():
         return {"datasets": {}}
 
-    return yaml.safe_load(registry_path.read_text()) or {"datasets": {}}
+    return yaml.safe_load(data_registry_path().read_text()) or {"datasets": {}}
 
 
-def save_data_registry(project_root: pathlib.Path, data: dict) -> None:
-    """
-    Write registry of datasets to file.
-
-    Parameters
-    ----------
-    project_root:
-        Root path for the project.
-    data:
-        Project dataset registry to save.
-
-    """
-
-    registry_path = project_root / "config" / "data_registry.yaml"
-    registry_path.write_text(yaml.safe_dump(data, sort_keys=False))
-
-
-def load_unit_registry(project_root: pathlib.Path) -> dict:
+def load_unit_registry() -> dict:
     """
     Read registry of work units from file.
 
-    Parameters
-    ----------
-    project_root:
-        Root path for the project.
-
     Returns
     -------
-     :
+    work_unit_registry:
         Work unit registry.
 
     """
 
-    registry_path = project_root / "config" / "unit_registry.yaml"
-    if not registry_path.exists():
+    if not work_unit_registry_path().exists():
         return {"work_units": {}}
 
-    return yaml.safe_load(registry_path.read_text()) or {"work_units": {}}
-
-
-def save_unit_registry(project_root: pathlib.Path, data: dict) -> None:
-    """
-    Write registry of work units to file.
-
-    Parameters
-    ----------
-    project_root:
-        Root path for the project.
-    data:
-        Work unit registry to save.
-
-    """
-
-    registry_path = project_root / "config" / "unit_registry.yaml"
-    registry_path.write_text(yaml.safe_dump(data, sort_keys=False))
+    return yaml.safe_load(work_unit_registry_path().read_text()) or {"work_units": {}}

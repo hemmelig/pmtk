@@ -10,9 +10,9 @@ I am using this to improve the reliability and reproducibility of my projects, a
 ## Features
 
 - Initialise new projects with a clean, well-structured directory layout
-- Manage Python/conda environments in a reproducible way
+- Integrates with `uv` to manage Python environments cleanly
 - Register datasets and do basic tracking of ownership, modification, etc.
-- Maintain a structured record of project metadata, status, and contacts
+- Maintain a structured record of project metadata
 - Provide clean separation between active work, final results, and archived materials
 - Lightweight command-line interface (`pmtk <command>`)
 
@@ -23,7 +23,7 @@ I am using this to improve the reliability and reproducibility of my projects, a
 ```
 <project_name>/
 ├── archive/
-├── config/
+├── .config/
 │   ├── data_registry.yaml
 │   ├── project.yaml
 │   └── unit_registry.yaml
@@ -34,29 +34,18 @@ I am using this to improve the reliability and reproducibility of my projects, a
 │   └── processed/
 ├── docs/
 │   ├── budget/
-│   ├── proposal-and-contract/
-│   ├── publications-and-outreach/
-│   ├── risks/
-│   ├── status/
+│   ├── notes/
+│   │   └── YYYY-MM-DD.md
+│   ├── proposal/
+│   ├── publications/
+│   ├── reports/
+│   │   ├── drafts/
+│   │   └── final/
 │   └── workplan/
-├── environments/
-│   ├── .venv1/
-│   ├── .venv2/
-│   ├── .../
-├── logs/
-│   └── pipeline/
-│   ├── pmtk/
-├── maps/
-├── notes/
-│   └── YYYY-MM-DD.md
-├── reports/
-│   ├── drafts/
-│   ├── final/
 ├── results/
 │   ├── figures/
-│   ├── tables/
 │   ├── models/
-├── tests/
+│   └── tables/
 ├── tools/
 ├── workspace/
 ├── README.md
@@ -70,7 +59,7 @@ I am using this to improve the reliability and reproducibility of my projects, a
 ## Design Principles
 
 ### **1. Reproducible**
-Raw data is immutable in `data/`, processed data is separate, and environments are tracked in `environments/`.
+Raw data is immutable in `data/` and processed data is separate.
 
 ### **2. Discoverable Documentation**
 All project documentation lives under `docs/`.
@@ -79,7 +68,7 @@ All project documentation lives under `docs/`.
 `workspace/` for active work, `results/` for outputs, `archive/` for retired/completed components.
 
 ### **4. Extensible Configuration**
-All metadata lives in modular YAML files under `config/`.
+All metadata lives in modular YAML files under `.config/`.
 
 ---
 
@@ -98,9 +87,3 @@ pmtk unit restore <unit-name>
 pmtk status
 pmtk tag <project-tag>
 ```
-
----
-
-## Roadmap
-
-- Remote syncing

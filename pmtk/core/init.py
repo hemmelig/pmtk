@@ -9,7 +9,6 @@ Utilities for the initialisation of a new project.
 
 """
 
-from datetime import datetime as dt, UTC
 import pathlib
 import subprocess
 
@@ -17,7 +16,7 @@ import typer
 import yaml
 
 from pmtk.templates import get_template
-from pmtk.utils import PROJECT_STRUCTURE
+from pmtk.utils import PROJECT_STRUCTURE, utc_now_iso
 
 
 def create_tree(base: pathlib.Path, tree: dict) -> None:
@@ -63,8 +62,8 @@ def init_project(
     typer.echo(typer.style("success!", fg=typer.colors.GREEN, bold=True))
 
     typer.echo("  ...initialising config files...", nl=False)
-    config_dir = project_path / "config"
-    now = dt.now(UTC).isoformat()
+    config_dir = project_path / ".config"
+    now = utc_now_iso()
     project_metadata = {
         "project_name": name,
         "created": now,
@@ -104,6 +103,9 @@ def init_project(
     )
 
     (project_path / ".pmignore").write_text("# Add internal or private files here\n")
+    (project_path / ".gitignoer").write_text(
+        "data/external/\ndata/processed/\n.DS_Store\n"
+    )
 
     (project_path / ".pre-commit-config.yaml").write_text(
         get_template("pre-commit-config.yaml")

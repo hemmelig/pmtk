@@ -14,7 +14,7 @@ import re
 import typer
 
 from pmtk.utils import find_project_root
-from .metadata import load_project_metadata, save_project_metadata
+from .metadata import load_project_metadata, project_metadata_path, save_yaml
 
 
 def add_tag(tag: str, dry_run: bool = False):
@@ -31,9 +31,6 @@ def add_tag(tag: str, dry_run: bool = False):
     """
 
     project_root = find_project_root()
-    if project_root is None:
-        typer.echo("Error: Not in a pmtk project. No .pmtk-lock file found.", err=True)
-        raise typer.Exit(code=1)
 
     data = load_project_metadata(project_root)
     tags = data.get("tags", [])
@@ -49,7 +46,7 @@ def add_tag(tag: str, dry_run: bool = False):
     if not dry_run:
         tags.append(new_tag)
         data["tags"] = sorted(tags)
-        save_project_metadata(project_root, data)
+        save_yaml(project_metadata_path(), data)
 
 
 def remove_tag(tag: str):
@@ -64,9 +61,6 @@ def remove_tag(tag: str):
     """
 
     project_root = find_project_root()
-    if project_root is None:
-        typer.echo("Error: Not in a pmtk project. No .pmtk-lock file found.", err=True)
-        raise typer.Exit(code=1)
 
     data = load_project_metadata(project_root)
     tags = data.get("tags", [])
@@ -79,7 +73,7 @@ def remove_tag(tag: str):
 
     tags.remove(norm)
     data["tags"] = tags
-    save_project_metadata(project_root, data)
+    save_yaml(project_metadata_path(), data)
 
     typer.echo(f"  Removed tag: {norm}")
 
@@ -91,9 +85,6 @@ def list_tags():
     """
 
     project_root = find_project_root()
-    if project_root is None:
-        typer.echo("Error: Not in a pmtk project. No .pmtk-lock file found.", err=True)
-        raise typer.Exit(code=1)
 
     data = load_project_metadata(project_root)
     tags = data.get("tags", [])

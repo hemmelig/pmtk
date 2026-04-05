@@ -44,9 +44,6 @@ def status() -> None:
     """
 
     project_root = find_project_root()
-    if project_root is None:
-        typer.echo("Error: Not in a pmtk project. No .pmtk-lock file found.", err=True)
-        raise typer.Exit(code=1)
 
     typer.echo(f"pmtk project detected: {project_root.name}")
     typer.echo("")
@@ -54,7 +51,7 @@ def status() -> None:
     try:
         project = load_project_metadata(project_root)
     except FileNotFoundError:
-        typer.echo("  Missing config/project.yaml\n")
+        typer.echo("  Missing .config/project.yaml\n")
         project = {}
 
     typer.echo("Project:")
