@@ -103,7 +103,7 @@ def init_project(
     )
 
     (project_path / ".pmignore").write_text("# Add internal or private files here\n")
-    (project_path / ".gitignoer").write_text(
+    (project_path / ".gitignore").write_text(
         "data/external/\ndata/processed/\n.DS_Store\n.venv/\n"
     )
 
