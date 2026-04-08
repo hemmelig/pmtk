@@ -81,7 +81,10 @@ def init_project(
     typer.echo(typer.style("success!", fg=typer.colors.GREEN, bold=True))
 
     (config_dir / "data_registry.yaml").write_text(
-        yaml.safe_dump({"datasets": []}, sort_keys=False)
+        yaml.safe_dump({"datasets": {}}, sort_keys=False)
+    )
+    (config_dir / "unit_registry.yaml").write_text(
+        yaml.safe_dump({"work_units": {}}, sort_keys=False)
     )
 
     typer.echo("  ...creating PMTK project files...", nl=False)
